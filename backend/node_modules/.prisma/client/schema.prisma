@@ -1,0 +1,161 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  MEMBER
+}
+
+enum CategoryType {
+  EXPENSE
+  SAVINGS
+  INVESTMENT
+}
+
+enum SettlementStatus {
+  PENDING
+  SETTLED
+}
+
+model Family {
+  id          String       @id @default(uuid())
+  name        String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  users       User[]
+  members     Member[]
+  categories  Category[]
+  budgets     Budget[]
+  expenses    Expense[]
+  settlements Settlement[]
+  monthLocks  MonthLock[]
+  auditLogs   AuditLog[]
+  invitations Invitation[]
+}
+
+model User {
+  id        String     @id @default(uuid())
+  name      String
+  email     String     @unique
+  password  String
+  role      Role       @default(MEMBER)
+  familyId  String
+  family    Family     @relation(fields: [familyId], references: [id])
+  auditLogs AuditLog[]
+  createdAt DateTime   @default(now())
+}
+
+model Member {
+  id                String       @id @default(uuid())
+  name              String
+  monthlyIncome     Float        @default(0)
+  isActive          Boolean      @default(true)
+  familyId          String
+  family            Family       @relation(fields: [familyId], references: [id])
+  managedCategories Category[]   @relation("CategoryManager")
+  expensesPaid      Expense[]    @relation("ExpensePaidBy")
+  settlementsFrom   Settlement[] @relation("SettlementFrom")
+  settlementsTo     Settlement[] @relation("SettlementTo")
+  createdAt         DateTime     @default(now())
+}
+
+model Category {
+  id        String       @id @default(uuid())
+  name      String
+  type      CategoryType
+  managerId String
+  manager   Member       @relation("CategoryManager", fields: [managerId], references: [id])
+  isActive  Boolean      @default(true)
+  familyId  String
+  family    Family       @relation(fields: [familyId], references: [id])
+  budgets   Budget[]
+  expenses  Expense[]
+  createdAt DateTime     @default(now())
+}
+
+model Budget {
+  id         String   @id @default(uuid())
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
+  amount     Float
+  month      Int
+  year       Int
+  familyId   String
+  family     Family   @relation(fields: [familyId], references: [id])
+  createdAt  DateTime @default(now())
+
+  @@unique([categoryId, month, year])
+}
+
+model Expense {
+  id             String   @id @default(uuid())
+  categoryId     String
+  category       Category @relation(fields: [categoryId], references: [id])
+  paidByMemberId String
+  paidBy         Member   @relation("ExpensePaidBy", fields: [paidByMemberId], references: [id])
+  amount         Float
+  description    String?
+  expenseDate    DateTime @default(now())
+  month          Int
+  year           Int
+  familyId       String
+  family         Family   @relation(fields: [familyId], references: [id])
+  createdAt      DateTime @default(now())
+}
+
+model Settlement {
+  id           String           @id @default(uuid())
+  fromMemberId String
+  fromMember   Member           @relation("SettlementFrom", fields: [fromMemberId], references: [id])
+  toMemberId   String
+  toMember     Member           @relation("SettlementTo", fields: [toMemberId], references: [id])
+  amount       Float
+  month        Int
+  year         Int
+  status       SettlementStatus @default(PENDING)
+  familyId     String
+  family       Family           @relation(fields: [familyId], references: [id])
+  createdAt    DateTime         @default(now())
+}
+
+model MonthLock {
+  id        String   @id @default(uuid())
+  month     Int
+  year      Int
+  isLocked  Boolean  @default(false)
+  familyId  String
+  family    Family   @relation(fields: [familyId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([month, year, familyId])
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  action     String
+  entityType String
+  entityId   String
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  familyId   String
+  family     Family   @relation(fields: [familyId], references: [id])
+  createdAt  DateTime @default(now())
+}
+
+model Invitation {
+  id        String   @id @default(uuid())
+  email     String
+  token     String   @unique @default(uuid())
+  role      Role     @default(MEMBER)
+  familyId  String
+  family    Family   @relation(fields: [familyId], references: [id])
+  used      Boolean  @default(false)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
