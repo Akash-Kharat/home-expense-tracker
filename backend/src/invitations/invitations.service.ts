@@ -7,12 +7,16 @@ import {
 import { Role } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
+import { MailService } from '../mail/mail.service';
 import { CreateInvitationDto } from './dto/create-invitation.dto';
 import { AcceptInvitationDto } from './dto/accept-invitation.dto';
 
 @Injectable()
 export class InvitationsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private mailService: MailService,
+  ) {}
 
   async create(createInvitationDto: CreateInvitationDto, user: any) {
     const existingInvite = await this.prisma.invitation.findFirst({
@@ -43,6 +47,19 @@ export class InvitationsService {
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
       },
     });
+
+    // Fetch family name for the email
+    const family = await this.prisma.family.findUnique({
+      where: { id: user.familyId },
+    });
+
+    // Send invitation email
+    await this.mailService.sendInvitationEmail(
+      createInvitationDto.email,
+      user.name || 'A family member',
+      family?.name || 'Your Family',
+      invitation.token,
+    );
 
     return invitation;
   }

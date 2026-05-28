@@ -46,10 +46,13 @@ exports.InvitationsService = void 0;
 const common_1 = require("@nestjs/common");
 const bcrypt = __importStar(require("bcryptjs"));
 const prisma_service_1 = require("../prisma/prisma.service");
+const mail_service_1 = require("../mail/mail.service");
 let InvitationsService = class InvitationsService {
     prisma;
-    constructor(prisma) {
+    mailService;
+    constructor(prisma, mailService) {
         this.prisma = prisma;
+        this.mailService = mailService;
     }
     async create(createInvitationDto, user) {
         const existingInvite = await this.prisma.invitation.findFirst({
@@ -76,6 +79,10 @@ let InvitationsService = class InvitationsService {
                 expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
             },
         });
+        const family = await this.prisma.family.findUnique({
+            where: { id: user.familyId },
+        });
+        await this.mailService.sendInvitationEmail(createInvitationDto.email, user.name || 'A family member', family?.name || 'Your Family', invitation.token);
         return invitation;
     }
     async accept(acceptInvitationDto) {
@@ -141,6 +148,7 @@ let InvitationsService = class InvitationsService {
 exports.InvitationsService = InvitationsService;
 exports.InvitationsService = InvitationsService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService,
+        mail_service_1.MailService])
 ], InvitationsService);
 //# sourceMappingURL=invitations.service.js.map

@@ -5,12 +5,12 @@ export declare class InvitationsController {
     private readonly invitationsService;
     constructor(invitationsService: InvitationsService);
     create(createInvitationDto: CreateInvitationDto, req: any): Promise<{
+        token: string;
         email: string;
         id: string;
         role: import(".prisma/client").$Enums.Role;
         familyId: string;
         createdAt: Date;
-        token: string;
         used: boolean;
         expiresAt: Date;
     }>;
@@ -22,12 +22,12 @@ export declare class InvitationsController {
         familyId: string;
     }>;
     findAll(req: any): Promise<{
+        token: string;
         email: string;
         id: string;
         role: import(".prisma/client").$Enums.Role;
         familyId: string;
         createdAt: Date;
-        token: string;
         used: boolean;
         expiresAt: Date;
     }[]>;

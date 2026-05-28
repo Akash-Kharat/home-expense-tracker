@@ -13,6 +13,7 @@ exports.AppModule = void 0;
 const common_1 = require("@nestjs/common");
 const config_1 = require("@nestjs/config");
 const prisma_module_1 = require("./prisma/prisma.module");
+const mail_module_1 = require("./mail/mail.module");
 const auth_module_1 = require("./auth/auth.module");
 const members_module_1 = require("./members/members.module");
 const categories_module_1 = require("./categories/categories.module");
@@ -35,6 +36,7 @@ exports.AppModule = AppModule = __decorate([
                 load: [configuration_1.default],
             }),
             prisma_module_1.PrismaModule,
+            mail_module_1.MailModule,
             auth_module_1.AuthModule,
             members_module_1.MembersModule,
             categories_module_1.CategoriesModule,
