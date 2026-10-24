@@ -9,22 +9,44 @@ export declare class AnalyticsController {
         savingsRate: number;
         topCategories: {
             name: string;
+            spent: number;
+            budget: number;
+        }[];
+        totalMembers: number;
+        memberBreakdown: {
+            member: {
+                id: string;
+                name: string;
+                monthlyIncome: number;
+            };
+            totalSpent: number;
+            totalBudget: number;
+        }[];
+        recentExpenses: {
+            id: string;
             amount: number;
+            description: string | null;
+            expenseDate: string;
+            category: {
+                name: string;
+            };
+            paidBy: {
+                name: string;
+            };
         }[];
         expenseCount: number;
     }>;
     getCategoryTrends(year: string, user: any): Promise<{
-        categoryName: string;
-        monthly: number[];
+        name: string;
+        months: number[];
     }[]>;
     getMemberTrends(year: string, user: any): Promise<{
-        memberName: string;
-        monthly: number[];
+        name: string;
+        months: number[];
     }[]>;
     getBudgetBurn(month: string, year: string, user: any): Promise<{
-        categoryId: string;
-        categoryName: string;
-        budgeted: number;
+        name: string;
+        budget: number;
         spent: number;
         remaining: number;
         burnRate: number;

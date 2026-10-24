@@ -24,37 +24,51 @@ export default function DataTable<T>({
 }: DataTableProps<T>) {
   if (data.length === 0) {
     return (
-      <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-12 text-center">
-        <p className="text-slate-400">{emptyMessage}</p>
+      <div
+        className="backdrop-blur-xl border rounded-2xl p-12 text-center"
+        style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)' }}
+      >
+        <p style={{ color: 'var(--text-secondary)' }}>{emptyMessage}</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden">
+    <div
+      className="backdrop-blur-xl border rounded-2xl overflow-hidden"
+      style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)' }}
+    >
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-white/10">
+            <tr className="border-b" style={{ borderColor: 'var(--border-color)' }}>
               {columns.map((col) => (
                 <th
                   key={col.key}
-                  className={`px-6 py-4 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider ${col.className || ''}`}
+                  className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider ${col.className || ''}`}
+                  style={{ color: 'var(--text-secondary)' }}
                 >
                   {col.header}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/5">
+          <tbody>
             {data.map((item) => (
               <tr
                 key={keyExtractor(item)}
                 onClick={() => onRowClick?.(item)}
-                className={`transition-colors hover:bg-white/5 ${onRowClick ? 'cursor-pointer' : ''}`}
+                className={`border-b transition-colors ${onRowClick ? 'cursor-pointer' : ''}`}
+                style={{ borderColor: 'var(--border-color)' }}
+                onMouseOver={(e) => (e.currentTarget.style.backgroundColor = 'var(--bg-surface-hover)')}
+                onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '')}
               >
                 {columns.map((col) => (
-                  <td key={col.key} className={`px-6 py-4 text-sm text-slate-300 ${col.className || ''}`}>
+                  <td
+                    key={col.key}
+                    className={`px-6 py-4 text-sm ${col.className || ''}`}
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
                     {col.render
                       ? col.render(item)
                       : String((item as Record<string, unknown>)[col.key] ?? '')}

@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Receipt, Plus, Search, Filter, Trash2, Edit3, Calendar } from 'lucide-react';
-import { expensesApi, categoriesApi, membersApi } from '../../api/endpoints';
+import { Receipt, Plus, Search, Trash2, Edit3, Calendar } from 'lucide-react';
+import { expensesApi, categoriesApi, membersApi, settlementsApi } from '../../api/endpoints';
 import GlassCard from '../../components/ui/GlassCard';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
@@ -49,12 +49,24 @@ export default function ExpensesPage() {
     queryFn: () => membersApi.getAll(),
   });
 
+  // Auto-regenerate settlements silently after expense change
+  const silentGenerateSettlements = (m: number, y: number) => {
+    settlementsApi.generate(m, y).then(() => {
+      queryClient.invalidateQueries({ queryKey: ['settlements'] });
+    }).catch(() => {}); // Silent failure — settlements are best-effort
+  };
+
   const createMutation = useMutation({
     mutationFn: expensesApi.create,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['budgets-summary'] });
+      queryClient.invalidateQueries({ queryKey: ['analytics'] });
       addToast('Expense added successfully', 'success');
       closeModal();
+      // Auto-regenerate settlements
+      silentGenerateSettlements(month, year);
     },
     onError: () => addToast('Failed to add expense', 'error'),
   });
@@ -63,8 +75,12 @@ export default function ExpensesPage() {
     mutationFn: ({ id, data }: { id: string; data: any }) => expensesApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['budgets-summary'] });
+      queryClient.invalidateQueries({ queryKey: ['analytics'] });
       addToast('Expense updated successfully', 'success');
       closeModal();
+      silentGenerateSettlements(month, year);
     },
     onError: () => addToast('Failed to update expense', 'error'),
   });
@@ -73,7 +89,11 @@ export default function ExpensesPage() {
     mutationFn: expensesApi.delete,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['budgets-summary'] });
+      queryClient.invalidateQueries({ queryKey: ['analytics'] });
       addToast('Expense deleted', 'success');
+      silentGenerateSettlements(month, year);
     },
     onError: () => addToast('Failed to delete expense', 'error'),
   });
@@ -131,13 +151,20 @@ export default function ExpensesPage() {
 
   if (isLoading) return <LoadingSpinner />;
 
+  const selectStyle = {
+    backgroundColor: 'var(--input-bg)',
+    borderColor: 'var(--border-color)',
+    color: 'var(--text-primary)',
+    colorScheme: 'inherit' as any,
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Expenses</h1>
-          <p className="text-slate-400 mt-1">Track and manage spending</p>
+          <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Expenses</h1>
+          <p className="mt-1" style={{ color: 'var(--text-secondary)' }}>Track and manage spending</p>
         </div>
         <div className="flex items-center gap-3">
           <MonthYearPicker month={month} year={year} onMonthChange={setMonth} onYearChange={setYear} />
@@ -150,19 +177,21 @@ export default function ExpensesPage() {
       {/* Filters */}
       <GlassCard className="flex flex-col sm:flex-row gap-4 p-4">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
           <input
             type="text"
             placeholder="Search expenses..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-slate-500 focus:border-indigo-500 focus:outline-none transition"
+            className="w-full pl-10 pr-4 py-2.5 border rounded-xl focus:border-indigo-500 focus:outline-none transition"
+            style={selectStyle}
           />
         </div>
         <select
           value={filterCategory}
           onChange={(e) => setFilterCategory(e.target.value)}
-          className="px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white focus:border-indigo-500 focus:outline-none transition"
+          className="px-4 py-2.5 border rounded-xl focus:border-indigo-500 focus:outline-none transition"
+          style={selectStyle}
         >
           <option value="">All Categories</option>
           {categories.map((cat: any) => (
@@ -172,7 +201,8 @@ export default function ExpensesPage() {
         <select
           value={filterMember}
           onChange={(e) => setFilterMember(e.target.value)}
-          className="px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white focus:border-indigo-500 focus:outline-none transition"
+          className="px-4 py-2.5 border rounded-xl focus:border-indigo-500 focus:outline-none transition"
+          style={selectStyle}
         >
           <option value="">All Members</option>
           {members.map((m: any) => (
@@ -188,9 +218,9 @@ export default function ExpensesPage() {
             <div className="p-2 bg-indigo-500/20 rounded-lg">
               <Receipt className="w-5 h-5 text-indigo-400" />
             </div>
-            <span className="text-slate-400">Total Expenses</span>
+            <span style={{ color: 'var(--text-secondary)' }}>Total Expenses ({filteredExpenses.length} items)</span>
           </div>
-          <span className="text-2xl font-bold text-white">₹{totalAmount.toLocaleString()}</span>
+          <span className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>₹{totalAmount.toLocaleString()}</span>
         </div>
       </GlassCard>
 
@@ -202,13 +232,13 @@ export default function ExpensesPage() {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-white/10">
-                  <th className="text-left p-4 text-sm font-medium text-slate-400">Date</th>
-                  <th className="text-left p-4 text-sm font-medium text-slate-400">Category</th>
-                  <th className="text-left p-4 text-sm font-medium text-slate-400">Paid By</th>
-                  <th className="text-left p-4 text-sm font-medium text-slate-400">Description</th>
-                  <th className="text-right p-4 text-sm font-medium text-slate-400">Amount</th>
-                  <th className="text-right p-4 text-sm font-medium text-slate-400">Actions</th>
+                <tr className="border-b" style={{ borderColor: 'var(--border-color)' }}>
+                  <th className="text-left p-4 text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Date</th>
+                  <th className="text-left p-4 text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Category</th>
+                  <th className="text-left p-4 text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Paid By</th>
+                  <th className="text-left p-4 text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Description</th>
+                  <th className="text-right p-4 text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Amount</th>
+                  <th className="text-right p-4 text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -220,11 +250,14 @@ export default function ExpensesPage() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0 }}
                       transition={{ delay: index * 0.03 }}
-                      className="border-b border-white/5 hover:bg-white/[0.03] transition"
+                      className="border-b transition"
+                      style={{ borderColor: 'var(--border-color)' }}
+                      onMouseOver={(e) => (e.currentTarget.style.backgroundColor = 'var(--bg-surface-hover)')}
+                      onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '')}
                     >
-                      <td className="p-4 text-sm text-slate-300">
+                      <td className="p-4 text-sm" style={{ color: 'var(--text-secondary)' }}>
                         <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-slate-500" />
+                          <Calendar className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
                           {expense.expenseDate ? new Date(expense.expenseDate).toLocaleDateString() : '-'}
                         </div>
                       </td>
@@ -233,20 +266,22 @@ export default function ExpensesPage() {
                           {expense.category?.name || 'Unknown'}
                         </span>
                       </td>
-                      <td className="p-4 text-sm text-slate-300">{expense.paidBy?.name || 'Unknown'}</td>
-                      <td className="p-4 text-sm text-slate-300">{expense.description || '-'}</td>
-                      <td className="p-4 text-sm text-right font-semibold text-white">₹{expense.amount.toLocaleString()}</td>
+                      <td className="p-4 text-sm" style={{ color: 'var(--text-secondary)' }}>{expense.paidBy?.name || 'Unknown'}</td>
+                      <td className="p-4 text-sm" style={{ color: 'var(--text-secondary)' }}>{expense.description || '-'}</td>
+                      <td className="p-4 text-sm text-right font-semibold" style={{ color: 'var(--text-primary)' }}>₹{expense.amount.toLocaleString()}</td>
                       <td className="p-4 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <button
                             onClick={() => openEdit(expense)}
-                            className="p-2 hover:bg-white/10 rounded-lg transition text-slate-400 hover:text-white"
+                            className="p-2 rounded-lg transition cursor-pointer hover:opacity-80"
+                            style={{ color: 'var(--text-secondary)' }}
                           >
                             <Edit3 className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => { if (confirm('Delete this expense?')) deleteMutation.mutate(expense.id); }}
-                            className="p-2 hover:bg-red-500/20 rounded-lg transition text-slate-400 hover:text-red-400"
+                            className="p-2 rounded-lg transition cursor-pointer hover:text-red-400"
+                            style={{ color: 'var(--text-secondary)' }}
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>

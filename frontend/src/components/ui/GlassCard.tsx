@@ -11,9 +11,13 @@ export default function GlassCard({ children, className = '', hover = false, onC
   return (
     <div
       onClick={onClick}
-      className={`bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 transition-all duration-300 ${
-        hover ? 'hover:bg-white/[0.07] hover:translate-y-[-2px] hover:shadow-lg hover:shadow-indigo-500/5 cursor-pointer' : ''
+      className={`backdrop-blur-xl border rounded-2xl p-6 transition-all duration-300 ${
+        hover ? 'hover:translate-y-[-2px] hover:shadow-lg hover:shadow-indigo-500/5 cursor-pointer' : ''
       } ${className}`}
+      style={{
+        backgroundColor: 'var(--card-bg)',
+        borderColor: 'var(--border-color)',
+      }}
     >
       {children}
     </div>

@@ -39,12 +39,20 @@ export default function StatCard({ icon: Icon, label, value, prefix = '', suffix
   }, [value]);
 
   return (
-    <div className="relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 overflow-hidden group hover:bg-white/[0.07] transition-all duration-300">
+    <div
+      className="relative backdrop-blur-xl border rounded-2xl p-6 overflow-hidden transition-all duration-300"
+      style={{
+        backgroundColor: 'var(--card-bg)',
+        borderColor: 'var(--border-color)',
+      }}
+      onMouseOver={(e) => (e.currentTarget.style.backgroundColor = 'var(--bg-surface-hover)')}
+      onMouseOut={(e) => (e.currentTarget.style.backgroundColor = 'var(--card-bg)')}
+    >
       <div className={`absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r ${colorMap[color]}`} />
       <div className="flex items-start justify-between">
         <div className="space-y-3">
-          <p className="text-sm text-slate-400 font-medium">{label}</p>
-          <p className="text-3xl font-bold text-white">
+          <p className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>{label}</p>
+          <p className="text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>
             {prefix}{displayValue.toLocaleString()}{suffix}
           </p>
           {trend && (
@@ -71,15 +79,23 @@ interface StatCardSimpleProps {
 
 export function StatCardSimple({ icon, label, value, subValue }: StatCardSimpleProps) {
   return (
-    <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 hover:bg-white/[0.07] transition-all duration-300">
+    <div
+      className="backdrop-blur-xl border rounded-2xl p-6 transition-all duration-300"
+      style={{
+        backgroundColor: 'var(--card-bg)',
+        borderColor: 'var(--border-color)',
+      }}
+      onMouseOver={(e) => (e.currentTarget.style.backgroundColor = 'var(--bg-surface-hover)')}
+      onMouseOut={(e) => (e.currentTarget.style.backgroundColor = 'var(--card-bg)')}
+    >
       <div className="flex items-start gap-4">
         <div className="p-3 rounded-xl bg-gradient-to-r from-indigo-500/20 to-purple-500/20">
           {icon}
         </div>
         <div>
-          <p className="text-sm text-slate-400 font-medium">{label}</p>
-          <p className="text-2xl font-bold text-white mt-1">{value}</p>
-          {subValue && <p className="text-sm text-slate-500 mt-1">{subValue}</p>}
+          <p className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>{label}</p>
+          <p className="text-2xl font-bold mt-1" style={{ color: 'var(--text-primary)' }}>{value}</p>
+          {subValue && <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>{subValue}</p>}
         </div>
       </div>
     </div>

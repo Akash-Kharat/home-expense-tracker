@@ -7,7 +7,6 @@ import {
 } from 'recharts';
 import { analyticsApi } from '../../api/endpoints';
 import GlassCard from '../../components/ui/GlassCard';
-import Select from '../../components/ui/Select';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import EmptyState from '../../components/ui/EmptyState';
 
@@ -17,8 +16,11 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload) return null;
   return (
-    <div className="bg-[#1a1a2e] border border-white/10 rounded-lg p-3 shadow-xl">
-      <p className="text-sm text-slate-300 mb-1">{label}</p>
+    <div
+      className="border rounded-lg p-3 shadow-xl"
+      style={{ backgroundColor: 'var(--tooltip-bg)', borderColor: 'var(--border-color)' }}
+    >
+      <p className="text-sm mb-1" style={{ color: 'var(--text-secondary)' }}>{label}</p>
       {payload.map((entry: any, i: number) => (
         <p key={i} className="text-sm font-medium" style={{ color: entry.color }}>
           {entry.name}: ₹{entry.value?.toLocaleString()}
@@ -55,7 +57,7 @@ export default function AnalyticsPage() {
 
   const isLoading = loadingCat || loadingMember || loadingBudget || loadingDash;
 
-  // Transform category trends for line chart
+  // Backend now returns { name, months[] } for category/member trends
   const categoryChartData = MONTHS.map((m, i) => {
     const row: any = { month: m };
     if (categoryTrends && Array.isArray(categoryTrends)) {
@@ -66,7 +68,6 @@ export default function AnalyticsPage() {
     return row;
   });
 
-  // Transform member trends for line chart
   const memberChartData = MONTHS.map((m, i) => {
     const row: any = { month: m };
     if (memberTrends && Array.isArray(memberTrends)) {
@@ -77,20 +78,23 @@ export default function AnalyticsPage() {
     return row;
   });
 
-  // Pie data from dashboard
+  // Pie data from dashboard topCategories — handle both old {amount} and new {spent}
   const pieData = dashboard?.topCategories?.map((cat: any) => ({
     name: cat.name,
-    value: cat.spent,
-  })) || [];
+    value: Number(cat.spent ?? cat.amount ?? 0),
+  })).filter((d: any) => d.value > 0) || [];
 
-  // Budget burn bar data
+  // Budget burn bar data — handles both old {categoryName,budgeted} and new {name,budget}
   const burnData = budgetBurn?.map((b: any) => ({
-    name: b.category || b.name,
-    budget: b.budget || 0,
-    spent: b.spent || 0,
-  })) || [];
+    name: b.name || b.categoryName || b.category || 'Unknown',
+    budget: Number(b.budget ?? b.budgeted ?? 0),
+    spent: Number(b.spent ?? 0),
+  })).filter((b: any) => b.budget > 0 || b.spent > 0) || [];
 
   const years = Array.from({ length: 5 }, (_, i) => now.getFullYear() - 2 + i);
+
+  const hasCategoryData = categoryTrends && categoryTrends.length > 0;
+  const hasMemberData = memberTrends && memberTrends.length > 0;
 
   if (isLoading) return <LoadingSpinner />;
 
@@ -99,14 +103,20 @@ export default function AnalyticsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Analytics</h1>
-          <p className="text-slate-400 mt-1">Financial insights and trends</p>
+          <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Analytics</h1>
+          <p className="mt-1" style={{ color: 'var(--text-secondary)' }}>Financial insights and trends</p>
         </div>
         <div className="flex items-center gap-3">
           <select
             value={month}
             onChange={(e) => setMonth(Number(e.target.value))}
-            className="px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:border-indigo-500 focus:outline-none"
+            className="px-3 py-2 border rounded-xl text-sm focus:border-indigo-500 focus:outline-none"
+            style={{
+              backgroundColor: 'var(--input-bg)',
+              borderColor: 'var(--border-color)',
+              color: 'var(--text-primary)',
+              colorScheme: 'inherit' as any,
+            }}
           >
             {MONTHS.map((m, i) => (
               <option key={i} value={i + 1}>{m}</option>
@@ -115,7 +125,13 @@ export default function AnalyticsPage() {
           <select
             value={year}
             onChange={(e) => setYear(Number(e.target.value))}
-            className="px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:border-indigo-500 focus:outline-none"
+            className="px-3 py-2 border rounded-xl text-sm focus:border-indigo-500 focus:outline-none"
+            style={{
+              backgroundColor: 'var(--input-bg)',
+              borderColor: 'var(--border-color)',
+              color: 'var(--text-primary)',
+              colorScheme: 'inherit' as any,
+            }}
           >
             {years.map((y) => (
               <option key={y} value={y}>{y}</option>
@@ -132,16 +148,16 @@ export default function AnalyticsPage() {
             <div className="p-2 bg-indigo-500/20 rounded-lg">
               <TrendingUp className="w-5 h-5 text-indigo-400" />
             </div>
-            <h2 className="text-lg font-semibold text-white">Category Trends</h2>
+            <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>Category Trends</h2>
           </div>
-          {categoryChartData.length > 0 ? (
+          {hasCategoryData ? (
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={categoryChartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                <XAxis dataKey="month" stroke="#94a3b8" fontSize={12} />
-                <YAxis stroke="#94a3b8" fontSize={12} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
+                <XAxis dataKey="month" stroke="var(--chart-axis)" fontSize={12} />
+                <YAxis stroke="var(--chart-axis)" fontSize={12} />
                 <Tooltip content={<CustomTooltip />} />
-                <Legend />
+                <Legend wrapperStyle={{ color: 'var(--text-secondary)', fontSize: '12px' }} />
                 {categoryTrends?.map((cat: any, i: number) => (
                   <Line
                     key={cat.name}
@@ -165,16 +181,16 @@ export default function AnalyticsPage() {
             <div className="p-2 bg-purple-500/20 rounded-lg">
               <Activity className="w-5 h-5 text-purple-400" />
             </div>
-            <h2 className="text-lg font-semibold text-white">Member Trends</h2>
+            <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>Member Trends</h2>
           </div>
-          {memberChartData.length > 0 ? (
+          {hasMemberData ? (
             <ResponsiveContainer width="100%" height={300}>
               <AreaChart data={memberChartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                <XAxis dataKey="month" stroke="#94a3b8" fontSize={12} />
-                <YAxis stroke="#94a3b8" fontSize={12} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
+                <XAxis dataKey="month" stroke="var(--chart-axis)" fontSize={12} />
+                <YAxis stroke="var(--chart-axis)" fontSize={12} />
                 <Tooltip content={<CustomTooltip />} />
-                <Legend />
+                <Legend wrapperStyle={{ color: 'var(--text-secondary)', fontSize: '12px' }} />
                 {memberTrends?.map((mem: any, i: number) => (
                   <Area
                     key={mem.name}
@@ -199,16 +215,16 @@ export default function AnalyticsPage() {
             <div className="p-2 bg-amber-500/20 rounded-lg">
               <BarChart3 className="w-5 h-5 text-amber-400" />
             </div>
-            <h2 className="text-lg font-semibold text-white">Budget vs Actual</h2>
+            <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>Budget vs Actual</h2>
           </div>
           {burnData.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={burnData} barGap={4}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} angle={-20} textAnchor="end" height={60} />
-                <YAxis stroke="#94a3b8" fontSize={12} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
+                <XAxis dataKey="name" stroke="var(--chart-axis)" fontSize={11} angle={-20} textAnchor="end" height={60} />
+                <YAxis stroke="var(--chart-axis)" fontSize={12} />
                 <Tooltip content={<CustomTooltip />} />
-                <Legend />
+                <Legend wrapperStyle={{ color: 'var(--text-secondary)', fontSize: '12px' }} />
                 <Bar dataKey="budget" fill="#6366f1" radius={[4, 4, 0, 0]} name="Budget" />
                 <Bar dataKey="spent" fill="#f59e0b" radius={[4, 4, 0, 0]} name="Spent" />
               </BarChart>
@@ -224,7 +240,7 @@ export default function AnalyticsPage() {
             <div className="p-2 bg-pink-500/20 rounded-lg">
               <PieChart className="w-5 h-5 text-pink-400" />
             </div>
-            <h2 className="text-lg font-semibold text-white">Expense Distribution</h2>
+            <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>Expense Distribution</h2>
           </div>
           {pieData.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
@@ -243,7 +259,7 @@ export default function AnalyticsPage() {
                   ))}
                 </Pie>
                 <Tooltip content={<CustomTooltip />} />
-                <Legend />
+                <Legend wrapperStyle={{ color: 'var(--text-secondary)', fontSize: '12px' }} />
               </RechartsPie>
             </ResponsiveContainer>
           ) : (

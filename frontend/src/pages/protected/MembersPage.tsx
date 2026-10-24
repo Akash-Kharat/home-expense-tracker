@@ -97,7 +97,7 @@ export default function MembersPage() {
           <div className="w-8 h-8 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white text-xs font-semibold">
             {m.name.charAt(0)}
           </div>
-          <span className="font-medium text-white">{m.name}</span>
+          <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{m.name}</span>
         </div>
       ),
     },
@@ -123,10 +123,10 @@ export default function MembersPage() {
       className: 'text-right',
       render: (m) => (
         <div className="flex items-center justify-end gap-2">
-          <button onClick={() => openEdit(m)} className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors cursor-pointer">
+          <button onClick={() => openEdit(m)} className="p-2 rounded-lg transition-colors cursor-pointer hover:opacity-80" style={{ color: 'var(--text-secondary)' }}>
             <Edit2 className="w-4 h-4" />
           </button>
-          <button onClick={() => setDeleteId(m.id)} className="p-2 rounded-lg hover:bg-red-500/10 text-slate-400 hover:text-red-400 transition-colors cursor-pointer">
+          <button onClick={() => setDeleteId(m.id)} className="p-2 rounded-lg transition-colors cursor-pointer hover:text-red-400" style={{ color: 'var(--text-secondary)' }}>
             <Trash2 className="w-4 h-4" />
           </button>
         </div>
@@ -140,8 +140,8 @@ export default function MembersPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Members</h1>
-          <p className="text-sm text-slate-400 mt-1">Manage your family members.</p>
+          <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Members</h1>
+          <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Manage your family members.</p>
         </div>
         <Button onClick={openCreate}><Plus className="w-4 h-4" /> Add Member</Button>
       </div>
@@ -168,7 +168,7 @@ export default function MembersPage() {
 
       {/* Delete confirmation */}
       <Modal isOpen={!!deleteId} onClose={() => setDeleteId(null)} title="Delete Member">
-        <p className="text-slate-400 mb-6">Are you sure you want to delete this member? This action cannot be undone.</p>
+        <p className="mb-6" style={{ color: 'var(--text-secondary)' }}>Are you sure you want to delete this member? This action cannot be undone.</p>
         <div className="flex justify-end gap-3">
           <Button variant="secondary" onClick={() => setDeleteId(null)}>Cancel</Button>
           <Button variant="danger" loading={deleteMutation.isPending} onClick={() => deleteId && deleteMutation.mutate(deleteId)}>Delete</Button>
